@@ -1,5 +1,9 @@
 import pandas as pd
 import numpy as np
+import pathlib as path
+
+export_dir = path.Path(__file__).parent.parent / "data"
+export_dir.mkdir(exist_ok=True)
 
 # Seed for reproducibility
 np.random.seed(42)
@@ -47,8 +51,15 @@ df = pd.DataFrame({
 # Total cost
 df["TotalCost"] = df["Quantity"] * df["UnitPrice"]
 
-print(df.head())
+df_sorted = df.sort_values(by=["TotalCost", "UnitPrice"], ascending=False).reset_index(drop=True) 
+
+print(df_sorted.head())
+print(df_sorted.describe())
 
 # Optional: Save to CSV
 #df.to_csv("data/test_dataset.csv", index=False)
 #print("\nSaved 300‑record dataset to data/test_dataset.csv")
+
+export_path = export_dir / "test_dataset.csv"
+df_sorted.to_csv(export_path, index=False)
+print(f"\nSaved sorted dataset to {export_path}")

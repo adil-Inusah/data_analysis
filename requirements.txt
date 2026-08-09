@@ -1,0 +1,6 @@
+pandas
+numpy
+tm1py
+requests
+matplotlib
+seaborn

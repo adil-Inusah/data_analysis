@@ -1,0 +1,77 @@
+# Pandas Ultimate Cheat Sheet
+*Your quick reference guide for essential data manipulation workflows.*
+
+## 1. Importing & Setup
+```python
+import pandas as pd  # Standard universal convention
+```
+
+## 2. Input / Output (Loading & Saving)
+```python
+# Load data into a DataFrame
+df = pd.read_csv('file.csv')      # From CSV
+df = pd.read_excel('file.xlsx')  # From Excel
+df = pd.read_json('file.json')    # From JSON
+
+# Save data out
+df.to_csv('output.csv', index=False)   # Save to CSV without row numbers
+df.to_excel('output.xlsx', index=False) # Save to Excel
+```
+
+## 3. Data Inspection (Quick Previews)
+```python
+df.head(5)       # View first 5 rows
+df.tail(5)       # View last 5 rows
+df.info()        # Column names, data types, and missing value counts
+df.describe()    # Summary stats (mean, min, max, std deviation)
+df.shape         # Returns (rows, columns) count
+df.columns       # List all column names
+```
+
+## 4. Selecting & Filtering Data
+```python
+# Selecting columns
+df['ColumnName']                  # Select single column (Series)
+df[['Col1', 'Col2']]              # Select multiple columns (DataFrame)
+
+# Filtering rows by condition
+df[df['Age'] > 30]                # Rows where Age is greater than 30
+df[(df['Age'] > 30) & (df['Status'] == 'Active')] # Multiple conditions (AND)
+df[(df['Age'] > 30) | (df['Status'] == 'Active')] # Multiple conditions (OR)
+
+# Selecting by index labels or positions
+df.loc[0:5, ['Name', 'Age']]     # Select rows 0-5 by label/name
+df.iloc[0:5, [0, 2]]              # Select rows 0-5 by numeric position
+```
+
+## 5. Cleaning & Transforming Data
+*Note: Overwrite your DataFrame (`df = ...`) or use `inplace=True` to save changes.*
+```python
+# Handling missing values
+df.dropna()                       # Drop rows containing any missing value
+df.fillna(0)                      # Replace all missing values with 0
+
+# Manipulating columns
+df.rename(columns={'Old':'New'}) # Rename columns
+df['NewCol'] = df['A'] + df['B']  # Create a new column from calculations
+df.drop(columns=['ColA', 'ColB']) # Delete columns
+```
+
+## 6. Aggregating & Grouping (Pivot Tables)
+```python
+df['Sales'].sum()                 # Sum of a single column
+df['Sales'].mean()                # Average of a single column
+df['Category'].value_counts()     # Count of unique items in a column
+
+# GroupBy (The Pivot Table alternative)
+df.groupby('Category')['Sales'].sum() # Total sales for each category
+df.groupby('Category').agg({'Sales': 'sum', 'Age': 'mean'}) # Multiple metrics
+```
+
+## 7. Joining & Combining Data
+```python
+# Stack DataFrames vertically (add more rows)
+pd.concat([df1, df2], axis=0)
+
+# Merge DataFrames horizontally (SQL-style JOIN on a shared key)
+pd.merge(df1, df2, on='ID', how='inner') # Supports 'left', 'right', 'outer'

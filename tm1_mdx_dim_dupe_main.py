@@ -1,5 +1,5 @@
 from tm1py.services import TM1Service
-from tm1_mdx_dim_dupe_check import find_rollup_duplicates_fast
+from mdx.tm1_mdx_dim_dupe_check import find_rollup_duplicates_fast
 
 # Configuration details for TM1
 TM1_CONFIG = {

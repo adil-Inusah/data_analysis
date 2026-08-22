@@ -1,6 +1,8 @@
 from dynamic_mdx_builder import DynamicMdxEngine
 
-# Instantiate the engine for a comprehensive financial reporting scenario
+# This example demonstrates the simpler, more compact MDX builder.
+# It creates a single query with multiple dimensions on rows and columns and
+# applies a WHERE filter for the reporting context.
 complex_query = (
     DynamicMdxEngine(cube_name="Finance")
     

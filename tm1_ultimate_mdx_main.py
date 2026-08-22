@@ -1,3 +1,10 @@
+"""Example script for the advanced MDX builder.
+
+This module shows how to generate a richer TM1 query with calculated members,
+multiple row and column dimensions, and a context filter for the selected
+reporting slice.
+"""
+
 from tm1_ultimate_mdx_engine import UltimateMdxEngine
 
 # This script shows the advanced engine in action.

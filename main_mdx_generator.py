@@ -1,3 +1,10 @@
+"""Example script for the lightweight MDX builder.
+
+This module demonstrates the simpler, fluent query-building API. It is intended
+for quick prototyping and for generating single-cube MDX queries with multiple
+row and column dimensions.
+"""
+
 from dynamic_mdx_builder import DynamicMdxEngine
 
 # This example demonstrates the simpler, more compact MDX builder.

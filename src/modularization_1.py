@@ -5,8 +5,17 @@ It is a useful example of how to break a data pipeline into small functions so e
 step can be tested, reused, and combined in different ways.
 """
 
+"""Reusable data-cleaning and transformation helpers.
+
+This file mixes low-level pandas utilities with a higher-level CSV processing flow.
+It is a useful example of how to break a data pipeline into small functions so each
+step can be tested, reused, and combined in different ways.
+"""
+
 import pandas as pd
+import matplotlib.pyplot as plt
 from pathlib import Path
+
 
 # ---------------------------------------------------------------------------
 # Low-level file and DataFrame helpers
@@ -93,7 +102,6 @@ def plot_hist(df: pd.DataFrame, column: str):
 # ---------------------------------------------------------------------------
 # The imports below show the intended project structure if these helpers were
 # split across modules such as helpers/io.py, helpers/cleaning.py, etc.
-from pathlib import Path
 from helpers.io import load_csv, export_csv
 from helpers.cleaning import clean_dataframe
 from helpers.stats import compute_stats

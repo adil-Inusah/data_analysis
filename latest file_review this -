@@ -1,0 +1,167 @@
+This blueprint updates the DynamicMdxEngine to handle advanced TM1 query operations: utilizing specific named subsets, filtering elements dynamically by hierarchy level or attribute value, and targeting specific unique members.
+## 🛠 The Advanced Dynamic MDX Engine Code
+Save this updated script to support complex expressions like FILTER, MEMBERS, and TM1-specific attribute filters.
+
+from mdxpy import MdxBuilder, MdxHierarchySet, Member, MdxTuplefrom typing import Union, List, Tuple, Dict, Any
+class AdvancedMdxEngine:
+    """
+    An advanced reusable factory engine wrapping MDXpy to handle subsets, 
+    level/attribute filtering, unique members, and multi-axis stitching.
+    """
+    def __init__(self, cube_name: str):
+        self.cube_name = cube_name
+        self.builder = MdxBuilder(cube=cube_name)
+        
+    def _build_advanced_set(self, config: Dict[str, Any]) -> MdxHierarchySet:
+        """
+        Parses advanced dimension parameters to construct a tailored MDX hierarchy set.
+        Expected config keys:
+          - dimension (str)
+          - subset (str, optional)
+          - level (int, optional)
+          - attribute_filter (dict, optional) -> {"attr_name": "attr_value"}
+          - specific_members (list, optional) -> ["Elem1", "Elem2"]
+        """
+        dim = config["dimension"]
+        hierarchy = config.get("hierarchy", "Default")
+        
+        # Scenario 1: Specific Explicit Members
+        if "specific_members" in config and config["specific_members"]:
+            member_objs = [Member.of(dim, hierarchy, m) for m in config["specific_members"]]
+            # MDXpy allows initializing sets directly from Member objects
+            axis_set = MdxHierarchySet.from_members(member_objs)
+            
+        # Scenario 2: Explicit TM1 Subset
+        elif "subset" in config and config["subset"]:
+            axis_set = MdxHierarchySet.tm1_subset(dim, hierarchy, config["subset"])
+            
+        # Scenario 3: Filter by Level (e.g., Level 0 leaves)
+        elif "level" in config and config["level"] is not None:
+            # Resolves to [Dimension].[Hierarchy].Members filtered by level
+            base_set = MdxHierarchySet.members(dim, hierarchy)
+            axis_set = base_set.filter_by_level(config["level"])
+            
+        # Default: Grab all members
+        else:
+            axis_set = MdxHierarchySet.tm1_subset_all(dim, hierarchy)
+            
+        # Layering Feature: Dynamic Attribute Filtering (Matches TM1 Filter by Attribute)
+        if "attribute_filter" in config and config["attribute_filter"]:
+            attr_name, attr_val = list(config["attribute_filter"].items())[0]
+            # Uses MDXpy internal filter block to evaluate text attributes
+            axis_set = axis_set.filter_by_attribute(attr_name, attr_val)
+            
+        return axis_set
+
+    def configure_columns(self, dimension_configs: List[Dict[str, Any]]):
+        """Processes and cross-joins advanced column configurations."""
+        if not dimension_configs:
+            return self
+        
+        axis_set = self._build_advanced_set(dimension_configs[0])
+        for config in dimension_configs[1:]:
+            next_set = self._build_advanced_set(config)
+            axis_set = axis_set.cross_join(next_set)
+            
+        self.builder.add_hierarchy_set_to_column_axis(axis_set)
+        return self
+
+    def configure_rows(self, dimension_configs: List[Dict[str, Any]], suppress_zeros: bool = True):
+        """Processes and cross-joins advanced row configurations with zero suppression."""
+        if not dimension_configs:
+            return self
+            
+        axis_set = self._build_advanced_set(dimension_configs[0])
+        for config in dimension_configs[1:]:
+            next_set = self._build_advanced_set(config)
+            axis_set = axis_set.cross_join(next_set)
+            
+        row_axis = self.builder.add_hierarchy_set_to_row_axis(axis_set)
+        if suppress_zeros:
+            row_axis.suppress_zeroes()
+            
+        return self
+
+    def configure_context_filter(self, slices: List[Tuple[str, str, str]]):
+        """Creates a slice context tuple. Tuples accept: (Dimension, Hierarchy, Element)"""
+        if slices:
+            member_objects = [Member.of(dim, hi, elem) for dim, hi, elem in slices]
+            context_tuple = MdxTuple.of(*member_objects)
+            self.builder.add_tuple_to_where_clause(context_tuple)
+        return self
+
+    def generate(self) -> str:
+        """Compiles MDX."""
+        return self.builder.to_mdx()
+
+------------------------------
+## 🚀 Production Use Case: The Global Financial Performance Matrix## The Business Scenario
+You need to extract a dataset from a Finance cube. Your requirements are granular:
+
+   1. Columns: You only want the Amount measure, but paired only with accounts that have the dynamic text attribute "Reporting_Group" = "Operating Expenses".
+   2. Rows: You want to stitch a specific pre-defined TM1 subset for Regions ("European_Hubs") against only leaf-level zero elements (n-elements) of your Product dimension to prevent double-counting consolidations.
+   3. Context Filter: You want to slice the data specifically targeting the Actual version, the 2026 year, and the Jan month hierarchy elements.
+
+## Complete Blueprint Execution Script
+
+from TM1py.Services import TM1Servicefrom advanced_mdx_engine import AdvancedMdxEngine
+# 1. Define configurations using explicit MDX/TM1 conceptscolumn_definition = [
+    {
+        "dimension": "Account",
+        "hierarchy": "Default",
+        # Filters elements where attribute matches text criteria
+        "attribute_filter": {"Reporting_Group": "Operating Expenses"} 
+    },
+    {
+        "dimension": "Measures",
+        "hierarchy": "Default",
+        # Isolate exact explicit unique members
+        "specific_members": ["Amount"] 
+    }
+]
+row_definition = [
+    {
+        "dimension": "Region",
+        "hierarchy": "Default",
+        # Pull from an existing TM1 subset
+        "subset": "European_Hubs" 
+    },
+    {
+        "dimension": "Product",
+        "hierarchy": "ByCategory",
+        # Isolate level 0 elements (Leaf/Data nodes only)
+        "level": 0 
+    }
+]
+# 2. Build the query using the Advanced Enginemdx_statement = (
+    AdvancedMdxEngine(cube_name="Finance")
+    .configure_columns(column_definition)
+    .configure_rows(row_definition, suppress_zeros=True)
+    # Define exact coordinate context tuple (Dimension, Hierarchy, Element)
+    .configure_context_filter([
+        ("Version", "Default", "Actual"),
+        ("Year", "Default", "2026"),
+        ("Month", "Default", "Jan")
+    ])
+    .generate()
+)
+
+print("Generated Advanced MDX:\n", mdx_statement)
+# 3. Pipeline extraction to Pandaswith TM1Service(address="localhost", port=8001, user="admin", password="apple", ssl=True) as tm1:
+    df = tm1.cubes.cells.execute_mdx_dataframe(mdx_statement)
+    print("\nResulting Clean DataFrame Snapshot:\n", df)
+
+------------------------------
+## 🔍 Syntax Breakdown: How MDXpy Resolves This
+By utilizing the parameters above, the engine forces MDXpy to generate distinct multi-dimensional operations:
+
+* filter_by_attribute: Translates into an MDX FILTER clause checking [Account].[Reporting_Group] = "Operating Expenses".
+* filter_by_level: Translates into [Product].[ByCategory].AllMembers paired with an .Ordinal = 0 conditional loop to strip out parents.
+* from_members: Bypasses full subsets completely to query the precise cell string index location specified.
+
+If you want to refine this approach, let me know:
+
+* Do your dimension attributes use text fields or numeric alias matches?
+* Do you want to build a validation function to ensure your named subsets exist in TM1 before generating the MDX?
+
+

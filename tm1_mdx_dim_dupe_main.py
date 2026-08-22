@@ -1,3 +1,6 @@
+from tm1py.services import TM1Service
+from mdx.engine import find_rollup_duplicates_fast
+
 # Configuration details for TM1
 TM1_CONFIG = {
     "address": "localhost", "port": 8001, "user": "admin", "password": "password", "ssl": True

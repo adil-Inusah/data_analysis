@@ -121,3 +121,45 @@ def execute_cross_cube_pipeline() -> pd.DataFrame:
    ```
 2. Import `DynamicMdxEngine` into your ETL pipeline script.
 3. Call your builder methods using chained fluent expressions to extract and process data frames seamlessly.
+
+---
+
+## 🔍 Duplicate Detection Engine (Rollup duplicates)
+
+The duplicate-detection engine that identifies leaf elements appearing in multiple specified rollups has been moved into the `mdx` package for better organization. The canonical implementation now lives at [mdx/engine.py](C:/Projects/data_analysis.worktrees/duplicate-identification-logic-update/mdx/engine.py).
+
+To keep existing scripts and examples working with minimal changes, a thin top-level facade is provided at [tm1_mdx_dim_dupe_check.py](C:/Projects/data_analysis.worktrees/duplicate-identification-logic-update/tm1_mdx_dim_dupe_check.py) so you can import the function directly without referencing the package.
+
+API
+- find_rollup_duplicates_fast(tm1_service, dimension_name, hierarchy_name, rollups_to_check) -> Dict[str, List[str]]
+  - Returns a mapping from leaf element -> sorted list of rollups that contain it (only includes leaves that appear in more than one of the specified rollups).
+  - Uses in-memory traversal of hierarchy edges for speed and deduplicates rollup occurrences before returning.
+  - Returns an empty dict on error (and prints a warning).
+
+Examples
+
+Top-level import (recommended for backward compatibility):
+
+```python
+from TM1py.Services import TM1Service
+from tm1_mdx_dim_dupe_check import find_rollup_duplicates_fast
+
+with TM1Service(address='localhost', port=8001, user='admin', password='pwd', ssl=True) as tm1:
+    duplicates = find_rollup_duplicates_fast(
+        tm1_service=tm1,
+        dimension_name='Product',
+        hierarchy_name='Product',
+        rollups_to_check=['Total Europe', 'All Products']
+    )
+    print(duplicates)
+```
+
+Package import (explicit):
+
+```python
+from mdx.engine import find_rollup_duplicates_fast
+```
+
+Notes
+- The engine output is deterministic (rollup lists are sorted) and guards against false positives by deduplicating rollup entries internally.
+- If you prefer a different module name under `mdx/` (for example `duplicate_engine.py`), rename the module and update the top-level facade; I can do that if you'd like.

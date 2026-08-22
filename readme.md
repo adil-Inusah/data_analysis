@@ -126,7 +126,7 @@ def execute_cross_cube_pipeline() -> pd.DataFrame:
 
 ## 🔍 Duplicate Detection Engine (Rollup duplicates)
 
-The duplicate-detection engine that identifies leaf elements appearing in multiple specified rollups has been moved into the `mdx` package for better organization. The canonical implementation lives at [mdx/tm1_mdx_dim_dupe_check.py](C:/Projects/data_analysis.worktrees/duplicate-identification-logic-update/mdx/tm1_mdx_dim_dupe_check.py).
+The duplicate-detection engine that identifies leaf elements appearing in multiple specified rollups has been moved into the `mdx` package for better organization. The canonical implementation now lives at [mdx/engine.py](C:/Projects/data_analysis.worktrees/duplicate-identification-logic-update/mdx/engine.py).
 
 To keep existing scripts and examples working with minimal changes, a thin top-level facade is provided at [tm1_mdx_dim_dupe_check.py](C:/Projects/data_analysis.worktrees/duplicate-identification-logic-update/tm1_mdx_dim_dupe_check.py) so you can import the function directly without referencing the package.
 
@@ -157,9 +157,9 @@ with TM1Service(address='localhost', port=8001, user='admin', password='pwd', ss
 Package import (explicit):
 
 ```python
-from mdx.tm1_mdx_dim_dupe_check import find_rollup_duplicates_fast
+from mdx.engine import find_rollup_duplicates_fast
 ```
 
 Notes
 - The engine output is deterministic (rollup lists are sorted) and guards against false positives by deduplicating rollup entries internally.
-- If you prefer a different module name under `mdx/` (for example `engine.py`), rename the module and update the top-level facade; I can do that if you'd like.
+- If you prefer a different module name under `mdx/` (for example `duplicate_engine.py`), rename the module and update the top-level facade; I can do that if you'd like.

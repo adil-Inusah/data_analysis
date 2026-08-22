@@ -12,6 +12,19 @@ The repo is organized by responsibility:
 - `src/` — experimental or utility scripts for data exploration and preprocessing
 - `archive/` — historical notes, drafts, and scratch material kept outside the active code paths
 
+## Root-level files and compatibility layer
+
+A few Python files remain at the repository root intentionally:
+
+- `dynamic_mdx_builder.py`
+- `tm1_ultimate_mdx_engine.py`
+- `main_mdx_generator.py`
+- `tm1_ultimate_mdx_main.py`
+
+These are compatibility entry points. They keep the older import and script patterns working while the actual implementation lives in the structured packages above. This helps avoid breaking quick-start examples and any external scripts that still reference the original file locations.
+
+The goal is to keep the package code clean and maintainable without forcing an immediate migration for every caller.
+
 ---
 
 ## 🛠 Core Component: `DynamicMdxEngine`

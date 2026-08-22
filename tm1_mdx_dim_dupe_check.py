@@ -51,7 +51,7 @@ def find_rollup_duplicates_fast(
 
     # Cache to optimize recursive lookups
     memo_cache = {}
-    element_mappings = {}  # { leaf_element: [rollup1, rollup2, ...] }
+    element_mappings = {}  # { leaf_element: set(rollups) } (uses a set to avoid duplicate rollup entries)
     
     # 4. Map leaves to our target rollups
     for rollup in rollups_to_check:
@@ -63,13 +63,13 @@ def find_rollup_duplicates_fast(
         
         for leaf in rollup_leaves:
             if leaf not in element_mappings:
-                element_mappings[leaf] = []
-            element_mappings[leaf].append(rollup)
+                element_mappings[leaf] = set()
+            element_mappings[leaf].add(rollup)
 
     # 5. Extract only elements tied to more than one target rollup
     duplicates = {
-        element: parents 
-        for element, parents in element_mappings.items() 
+        element: sorted(list(parents))
+        for element, parents in element_mappings.items()
         if len(parents) > 1
     }
     

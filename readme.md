@@ -2,6 +2,16 @@ Dynamic MDX Engine & Cross-Cube Blending Guide
 
 This repository contains a production-ready, reusable Python framework designed to abstract, generate, and blend **Multi-Dimensional Expression (MDX)** queries across multiple **IBM Planning Analytics (TM1)** cubes using `mdxpy` and `TM1py`.
 
+## Project layout
+
+The repo is organized by responsibility:
+
+- `mdx/` — reusable MDX query-building engines
+- `examples/` — runnable example scripts that use the builders
+- `data_utils/` — compatibility wrappers for the analysis utilities in `src/`
+- `src/` — experimental or utility scripts for data exploration and preprocessing
+- `archive/` — historical notes, drafts, and scratch material kept outside the active code paths
+
 ---
 
 ## 🛠 Core Component: `DynamicMdxEngine`

@@ -1,4 +1,4 @@
-from ultimate_mdx_engine import UltimateMdxEngine
+from tm1_ultimate_mdx_engine import UltimateMdxEngine
 
 # 1. Initialize Engine
 engine = UltimateMdxEngine(cube_name="Finance")

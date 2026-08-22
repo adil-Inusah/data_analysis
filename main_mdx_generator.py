@@ -1,3 +1,5 @@
+from dynamic_mdx_builder import DynamicMdxEngine
+
 # Instantiate the engine for a comprehensive financial reporting scenario
 complex_query = (
     DynamicMdxEngine(cube_name="Finance")

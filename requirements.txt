@@ -1,5 +1,6 @@
 pandas
 numpy
+mdxpy
 tm1py
 requests
 matplotlib

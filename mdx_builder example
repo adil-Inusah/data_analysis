@@ -1,0 +1,41 @@
+import pandas as pd
+from TM1py.Services import TM1Service
+from dynamic_mdx_builder import DynamicMdxEngine # Your reusable builder
+
+def generate_unified_cross_cube_view():
+    # 1. Build queries targeting different cubes using your engine
+    sales_mdx = (
+        DynamicMdxEngine(cube= "Sales")
+        .configure_columns(dimensions="Measures", subset_name="Amount")
+        .configure_rows(dimensions=["Region", "Product"])
+        .configure_context_filter([("Year", "2026"), ("Month", "Jan")])
+        .generate()
+    )
+
+    inventory_mdx = (
+        DynamicMdxEngine(cube="Inventory")
+        .configure_columns(dimensions="InventoryMeasures", subset_name="StockOnHand")
+        .configure_rows(dimensions=["Region", "Product"])
+        .configure_context_filter([("Year", "2026"), ("Month", "Jan")])
+        .generate()
+    )
+
+    # 2. Extract from separate cubes and blend via Pandas
+    with TM1Service(address="localhost", port=8001, user="admin", password="apple", ssl=True) as tm1:
+        # Pull separate datasets (Ensuring shared dimensions like Region/Product are on the rows)
+        df_sales = tm1.cubes.cells.execute_mdx_dataframe(sales_mdx)
+        df_inventory = tm1.cubes.cells.execute_mdx_dataframe(inventory_mdx)
+        
+        # 3. Merge into a single unified view dataset based on matching row dimensions
+        unified_view_df = pd.merge(
+            df_sales, 
+            df_inventory, 
+            on=["Region", "Product"], 
+            how="outer" # Keeps all records even if missing a match in one cube
+        )
+        
+        return unified_view_df
+
+# Execute and view the blended dataset
+df_unified = generate_unified_cross_cube_view()
+print(df_unified)

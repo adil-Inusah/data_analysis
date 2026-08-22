@@ -1,50 +1,72 @@
-from typing import List, Dict
+from typing import List, Dict, Set
 from tm1py.services import TM1Service
-from mdxpy import MdxBuilder, Member, Dimension
 
-def find_dimension_duplicates(
+def find_rollup_duplicates_fast(
     tm1_service: TM1Service, 
     dimension_name: str, 
     hierarchy_name: str, 
     rollups_to_check: List[str]
 ) -> Dict[str, List[str]]:
     """
-    Checks specified roll-ups within a TM1 dimension for duplicate leaf elements.
-    
-    :param tm1_service: An active TM1Service connection object
-    :param dimension_name: Name of the TM1 dimension
-    :param hierarchy_name: Name of the hierarchy (use dimension name for default)
-    :param rollups_to_check: A list of consolidation element names to inspect
-    :return: A dictionary of duplicates found -> { 'child_element': ['RollupA', 'RollupB'] }
+    Finds duplicate leaf elements across specified rollups instantly using 
+    in-memory edge evaluation instead of repeated MDX queries.
     """
-    element_mappings = {}  # Tracks { child_element: [parent_rollup1, parent_rollup2, ...] }
-    
-    for rollup in rollups_to_check:
-        # Build the MDX query to fetch leaf elements under this specific rollup
-        mdx_query = (
-            MdxBuilder.from_cube(f"}}ElementAttributes_{dimension_name}")
-            .rows_on_axis(
-                Dimension(dimension_name)
-                .tm1_filter_by_level(0)  # Level 0 catches leaves where double-counting hurts
-                .tm1_drill_down_member(Member.of(dimension_name, rollup))
-            )
-            .to_mdx()
-        )
-        
-        try:
-            # Execute MDX and capture the child elements
-            child_elements = tm1_service.elements.execute_mdx(mdx_query)
-            
-            for child in child_elements:
-                if child not in element_mappings:
-                    element_mappings[child] = []
-                element_mappings[child].append(rollup)
-                
-        except Exception as e:
-            print(f"⚠️ Warning: Could not process rollup '{rollup}'. Error: {e}")
-            continue
+    # 1. Fetch ALL hierarchy relationships (edges) in one bulk database call
+    # Returns a dict of {(parent, child): weight}
+    try:
+        edges = tm1_service.elements.get_edges(dimension_name, hierarchy_name)
+    except Exception as e:
+        print(f"⚠️ Error fetching edges for dimension '{dimension_name}': {e}")
+        return {}
 
-    # Filter the mappings down to only elements that appear in more than one passed rollup
+    # 2. Re-structure edges into a fast lookup tree: { parent: [children] }
+    tree = {}
+    all_children = set()
+    for parent, child in edges.keys():
+        if parent not in tree:
+            tree[parent] = []
+        tree[parent].append(child)
+        all_children.add(child)
+        
+    # Elements that are never children are top-level consolidations
+    all_parents = set(tree.keys())
+    # Leaf elements are elements that never act as a parent to anything
+    leaf_elements = all_children - all_parents
+
+    # 3. Helper function to recursively find all level-0 leaves under a consolidation
+    def get_all_leaves(element: str, memo: Dict[str, Set[str]]) -> Set[str]:
+        if element in leaf_elements:
+            return {element}
+        if element in memo:
+            return memo[element]
+        
+        leaves = set()
+        # If it's a consolidation, look up its children
+        if element in tree:
+            for child in tree[element]:
+                leaves.update(get_all_leaves(child, memo))
+                
+        memo[element] = leaves
+        return leaves
+
+    # Cache to optimize recursive lookups
+    memo_cache = {}
+    element_mappings = {}  # { leaf_element: [rollup1, rollup2, ...] }
+    
+    # 4. Map leaves to our target rollups
+    for rollup in rollups_to_check:
+        if rollup not in tree and rollup not in leaf_elements:
+            print(f"⚠️ Warning: Rollup '{rollup}' not found in dimension '{dimension_name}'.")
+            continue
+            
+        rollup_leaves = get_all_leaves(rollup, memo_cache)
+        
+        for leaf in rollup_leaves:
+            if leaf not in element_mappings:
+                element_mappings[leaf] = []
+            element_mappings[leaf].append(rollup)
+
+    # 5. Extract only elements tied to more than one target rollup
     duplicates = {
         element: parents 
         for element, parents in element_mappings.items() 

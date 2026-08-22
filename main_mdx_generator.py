@@ -1,29 +1,11 @@
-"""Example script for the lightweight MDX builder.
+"""Backward-compatible entry point for the basic MDX example.
 
-This module demonstrates the simpler, fluent query-building API. It is intended
-for quick prototyping and for generating single-cube MDX queries with multiple
-row and column dimensions.
+This file remains in the repo root so older scripts continue to work, while the
+actual implementation now lives under the mdx/ package.
 """
 
-from dynamic_mdx_builder import DynamicMdxEngine
+from examples.basic_mdx_example import complex_query
 
-# This example demonstrates the simpler, more compact MDX builder.
-# It creates a single query with multiple dimensions on rows and columns and
-# applies a WHERE filter for the reporting context.
-complex_query = (
-    DynamicMdxEngine(cube_name="Finance")
-    
-    # Stitching MULTIPLE dimensions on COLUMNS: Nested display of Accounts and Measures
-    .configure_columns(dimensions=["Account", "Measures"], subset_name="Default")
-    
-    # Stitching MULTIPLE dimensions on ROWS: Nested grid display of Region, Department, and Project
-    .configure_rows(dimensions=["Region", "Department", "Project"], subset_name="Default", suppress_zeros=True)
-    
-    # Slicing the entire data view by specific timeline context coordinates
-    .configure_context_filter([("Year", "2026"), ("Version", "Actual")])
-    
-    # Generate the resulting MDX string
-    .generate()
-)
 
-print(complex_query)
+if __name__ == "__main__":
+    print(complex_query)
